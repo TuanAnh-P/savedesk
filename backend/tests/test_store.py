@@ -20,6 +20,7 @@ from app.data_access.store import (
 )
 from app.models.domain import OutreachStatus
 from app.services.outreach import InvalidTransitionError
+from app.services.scoring import MAX_SCORE, score_customer, tier_for_score
 from tests.conftest import make_customer
 
 
@@ -161,3 +162,36 @@ class TestTierValidation:
             for row in build_store(settings.csv_path).tier_validation()
         )
         assert total == pytest.approx(1.0, abs=0.001)
+
+
+class TestScoringAcrossTheWholeDataset:
+    """The scoring invariants, checked against every real customer.
+
+    The hand-built fixtures in test_scoring.py cover the rules one at a time,
+    but they only exercise the combinations someone thought to write down. An
+    earlier version of the weights totalled 106 against a cap of 100, and the
+    fixtures all happened to fall short of the cap, so a breakdown that
+    contradicted its own score shipped green. These run over all 7,043 rows.
+    """
+
+    def test_every_breakdown_reconciles_with_its_score(self) -> None:
+        offenders = []
+        for customer in load_customers(settings.csv_path):
+            assessment = score_customer(customer)
+            total = sum(f.points for f in assessment.factors)
+            if total != assessment.score:
+                offenders.append((customer.customer_id, total, assessment.score))
+
+        assert not offenders, (
+            f"{len(offenders)} customers have a breakdown that does not sum to "
+            f"their score, e.g. {offenders[:3]}"
+        )
+
+    def test_every_score_is_within_range(self) -> None:
+        for customer in load_customers(settings.csv_path):
+            assert 0 <= score_customer(customer).score <= MAX_SCORE
+
+    def test_every_tier_matches_its_score(self) -> None:
+        for customer in load_customers(settings.csv_path):
+            assessment = score_customer(customer)
+            assert assessment.tier is tier_for_score(assessment.score)

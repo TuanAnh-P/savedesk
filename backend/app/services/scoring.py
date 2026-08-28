@@ -80,7 +80,7 @@ def _online_security(c: Customer) -> tuple[str, int]:
 
 
 def _senior_citizen(c: Customer) -> tuple[str, int]:
-    return ("Yes" if c.senior_citizen else "No"), 6 if c.senior_citizen else 0
+    return ("Yes" if c.senior_citizen else "No"), 4 if c.senior_citizen else 0
 
 
 def _monthly_charges(c: Customer) -> tuple[str, int]:
@@ -88,18 +88,18 @@ def _monthly_charges(c: Customer) -> tuple[str, int]:
     # scaled linearly.
     amount = f"${c.monthly_charges:.2f}"
     if c.monthly_charges >= 70:
-        return amount, 6
+        return amount, 4
     if c.monthly_charges >= 35:
-        return amount, 2
+        return amount, 1
     return amount, 0
 
 
 def _partner(c: Customer) -> tuple[str, int]:
-    return ("Yes" if c.partner else "No"), 0 if c.partner else 3
+    return ("Yes" if c.partner else "No"), 0 if c.partner else 2
 
 
 def _dependents(c: Customer) -> tuple[str, int]:
-    return ("Yes" if c.dependents else "No"), 0 if c.dependents else 3
+    return ("Yes" if c.dependents else "No"), 0 if c.dependents else 2
 
 
 RULES: tuple[FactorRule, ...] = (
@@ -184,8 +184,8 @@ RULES: tuple[FactorRule, ...] = (
         key="senior_citizen",
         label="Senior citizen",
         rationale="Senior accounts churn at 41.7% versus 23.6% for everyone else.",
-        max_points=6,
-        bands=(("Yes", 6), ("No", 0)),
+        max_points=4,
+        bands=(("Yes", 4), ("No", 0)),
         evaluate=_senior_citizen,
     ),
     FactorRule(
@@ -195,26 +195,34 @@ RULES: tuple[FactorRule, ...] = (
             "Churn climbs with the monthly bill and peaks in the $70-95 band at "
             "37.3%, against 10.9% for bills under $35."
         ),
-        max_points=6,
-        bands=(("$70 or more", 6), ("$35-$70", 2), ("Under $35", 0)),
+        max_points=4,
+        bands=(("$70 or more", 4), ("$35-$70", 1), ("Under $35", 0)),
         evaluate=_monthly_charges,
     ),
     FactorRule(
         key="partner",
         label="Partner",
         rationale="Customers without a partner churn at 33.0% versus 19.7%.",
-        max_points=3,
-        bands=(("No", 3), ("Yes", 0)),
+        max_points=2,
+        bands=(("No", 2), ("Yes", 0)),
         evaluate=_partner,
     ),
     FactorRule(
         key="dependents",
         label="Dependents",
         rationale="Customers without dependents churn at 31.3% versus 15.5%.",
-        max_points=3,
-        bands=(("No", 3), ("Yes", 0)),
+        max_points=2,
+        bands=(("No", 2), ("Yes", 0)),
         evaluate=_dependents,
     ),
+)
+
+# The weights are chosen to total exactly MAX_SCORE, so a score is always the
+# plain sum of its factors and never needs capping. That is what lets the
+# console promise that the breakdown reconciles with the number beside it.
+# Enforced here so a future weight change cannot quietly break it.
+assert sum(rule.max_points for rule in RULES) == MAX_SCORE, (
+    f"Factor weights total {sum(r.max_points for r in RULES)}, expected {MAX_SCORE}."
 )
 
 # Gender is excluded: no signal (1.01x lift) and not an acceptable basis for
@@ -236,13 +244,18 @@ def tier_for_score(score: int) -> RiskTier:
 
 
 def score_customer(customer: Customer) -> RiskAssessment:
-    """Score one customer, returning every factor including the zero-point ones."""
+    """Score one customer, returning every factor including the zero-point ones.
+
+    The score is the plain sum of the factor points. Because the weights total
+    MAX_SCORE (asserted above), no clamping is needed and the breakdown always
+    reconciles with the score for every customer.
+    """
     factors: list[RiskFactor] = []
-    total = 0
+    score = 0
 
     for rule in RULES:
         observed, points = rule.evaluate(customer)
-        total += points
+        score += points
         factors.append(
             RiskFactor(
                 key=rule.key,
@@ -254,8 +267,6 @@ def score_customer(customer: Customer) -> RiskAssessment:
             )
         )
 
-    # The rules can sum to 106; a score above 100 would undermine the number.
-    score = min(total, MAX_SCORE)
     return RiskAssessment(score=score, tier=tier_for_score(score), factors=tuple(factors))
 
 

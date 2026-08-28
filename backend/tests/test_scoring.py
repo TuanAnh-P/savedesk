@@ -52,10 +52,10 @@ class TestFactorContributions:
             ("internet_service", "Fiber optic", 12),
             ("internet_service", "DSL", 4),
             ("internet_service", "No", 0),
-            ("senior_citizen", True, 6),
+            ("senior_citizen", True, 4),
             ("senior_citizen", False, 0),
-            ("monthly_charges", 95.0, 6),
-            ("monthly_charges", 50.0, 2),
+            ("monthly_charges", 95.0, 4),
+            ("monthly_charges", 50.0, 1),
             ("monthly_charges", 20.0, 0),
         ],
     )
@@ -100,10 +100,19 @@ class TestScoreIntegrity:
             assessment = score_customer(customer)
             assert sum(f.points for f in assessment.factors) == assessment.score
 
-    def test_score_is_capped_at_100(self) -> None:
-        assert sum(rule.max_points for rule in RULES) > MAX_SCORE
+    def test_weights_total_the_maximum_score(self) -> None:
+        """The reason no clamping is needed.
+
+        An earlier version had the weights totalling 106 against a cap of 100,
+        so the worst-affected customers displayed a score their own breakdown
+        contradicted. Pinning the total here is what stops that returning.
+        """
+        assert sum(rule.max_points for rule in RULES) == MAX_SCORE
+
+    def test_worst_case_customer_scores_exactly_the_maximum(self) -> None:
         assessment = score_customer(make_high_risk_customer())
         assert assessment.score == MAX_SCORE
+        assert sum(f.points for f in assessment.factors) == MAX_SCORE
         assert assessment.tier is RiskTier.CRITICAL
 
     def test_gender_never_affects_the_score(self) -> None:
