@@ -5,7 +5,11 @@ import { BrowserRouter } from 'react-router-dom'
 
 import App from './App'
 import { ApiError } from './api/client'
+import { initTheme } from './hooks/useTheme'
 import './styles.css'
+
+// Before first paint, so the page never flashes light and then flips to dark.
+initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {

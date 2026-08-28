@@ -1,29 +1,18 @@
+import { STATUS_BADGE_COLOR, STATUS_LABELS, TIER_BADGE_COLOR } from './presentation'
+import { Badge } from './ui/badge'
 import type { OutreachStatus, RiskTier } from '../types/api'
 
-const STATUS_LABELS: Record<OutreachStatus, string> = {
-  NOT_CONTACTED: 'Not contacted',
-  IN_PROGRESS: 'In progress',
-  RESOLVED: 'Resolved',
-  UNREACHABLE: 'Unreachable',
-}
-
-// Tier is shown as colour *and* text: colour alone would exclude colour-blind
-// agents, and this is the field the whole workflow keys off.
 export function RiskBadge({ tier, score }: { tier: RiskTier; score?: number }) {
   return (
-    <span className={`badge badge--${tier.toLowerCase()}`}>
+    <Badge color={TIER_BADGE_COLOR[tier]}>
       {tier}
-      {score !== undefined && <span className="badge__score">{score}</span>}
-    </span>
+      {score !== undefined && (
+        <span className="ml-1 tabular-nums opacity-75">{score}</span>
+      )}
+    </Badge>
   )
 }
 
 export function StatusBadge({ status }: { status: OutreachStatus }) {
-  return (
-    <span className={`status status--${status.toLowerCase()}`}>
-      {STATUS_LABELS[status]}
-    </span>
-  )
+  return <Badge color={STATUS_BADGE_COLOR[status]}>{STATUS_LABELS[status]}</Badge>
 }
-
-export { STATUS_LABELS }

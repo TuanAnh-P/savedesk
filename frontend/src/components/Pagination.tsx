@@ -1,3 +1,7 @@
+import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/16/solid'
+
+import { Button } from './ui/button'
+
 interface Props {
   page: number
   totalPages: number
@@ -7,6 +11,11 @@ interface Props {
   isFetching?: boolean
 }
 
+/**
+ * Catalyst's Pagination component is link-based (href only). Paging here is
+ * local state rather than a route, so this uses Catalyst Buttons directly to
+ * get the same styling with click handlers.
+ */
 export function Pagination({
   page,
   totalPages,
@@ -21,31 +30,38 @@ export function Pagination({
   const last = Math.min(page * pageSize, total)
 
   return (
-    <nav className="pagination" aria-label="Pagination">
-      <span className="pagination__summary">
+    <nav
+      aria-label="Pagination"
+      className="mt-4 flex flex-wrap items-center justify-between gap-4"
+    >
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         {first.toLocaleString()}&ndash;{last.toLocaleString()} of{' '}
         {total.toLocaleString()}
-        {isFetching && <span className="pagination__loading"> updating…</span>}
-      </span>
+        {isFetching && <span className="italic"> &middot; updating&hellip;</span>}
+      </p>
 
-      <div className="pagination__controls">
-        <button
-          className="button"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-        >
-          Previous
-        </button>
-        <span className="pagination__page">
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">
           Page {page} of {totalPages}
         </span>
-        <button
-          className="button"
-          onClick={() => onPageChange(page + 1)}
+        <Button
+          plain
+          aria-label="Previous page"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ArrowLeftIcon />
+          Previous
+        </Button>
+        <Button
+          plain
+          aria-label="Next page"
           disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
         >
           Next
-        </button>
+          <ArrowRightIcon />
+        </Button>
       </div>
     </nav>
   )

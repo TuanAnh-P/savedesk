@@ -1,3 +1,4 @@
+import { ArrowLeftIcon } from '@heroicons/react/16/solid'
 import { Link, useParams } from 'react-router-dom'
 
 import { useCustomer, useModelInfo } from '../api/queries'
@@ -32,6 +33,18 @@ function profileRows(profile: CustomerProfile) {
   ] as const
 }
 
+function BackLink() {
+  return (
+    <Link
+      to="/"
+      className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+    >
+      <ArrowLeftIcon className="size-4" />
+      Back to queue
+    </Link>
+  )
+}
+
 export function CustomerDetailPage() {
   const { customerId = '' } = useParams()
   const customer = useCustomer(customerId)
@@ -41,10 +54,8 @@ export function CustomerDetailPage() {
 
   if (customer.isError) {
     return (
-      <div className="page">
-        <Link className="back-link" to="/">
-          &larr; Back to queue
-        </Link>
+      <div className="mx-auto max-w-7xl space-y-4">
+        <BackLink />
         <ErrorState error={customer.error} onRetry={() => customer.refetch()} />
       </div>
     )
@@ -53,43 +64,53 @@ export function CustomerDetailPage() {
   const { profile, risk_score, risk_tier, factors, outreach } = customer.data
 
   return (
-    <div className="page">
-      <Link className="back-link" to="/">
-        &larr; Back to queue
-      </Link>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <BackLink />
 
-      <header className="detail__header">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>{profile.customer_id}</h1>
-          <p className="page__subtitle">
+          <h1 className="text-2xl font-semibold text-zinc-950 dark:text-white">
+            {profile.customer_id}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             {profile.contract} &middot; {profile.tenure} months &middot; $
             {profile.monthly_charges.toFixed(2)}/mo
           </p>
         </div>
-        <div className="detail__score">
-          <span className="detail__score-value">{risk_score}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-4xl font-semibold tabular-nums leading-none text-zinc-950 dark:text-white">
+            {risk_score}
+          </span>
           <RiskBadge tier={risk_tier} />
         </div>
       </header>
 
-      <div className="detail__grid">
-        <div className="detail__main">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <FactorBreakdown factors={factors} totalScore={risk_score} />
 
-          <section className="profile">
-            <h2>Customer record</h2>
-            <dl className="profile__grid">
+          <section className="rounded-lg border border-zinc-950/5 bg-white p-5 dark:border-white/10 dark:bg-zinc-900">
+            <h2 className="text-base font-semibold text-zinc-950 dark:text-white">
+              Customer record
+            </h2>
+            <dl className="mt-4 grid gap-x-8 sm:grid-cols-2">
               {profileRows(profile).map(([label, value]) => (
-                <div key={label} className="profile__row">
-                  <dt>{label}</dt>
-                  <dd>{value}</dd>
+                <div
+                  key={label}
+                  className="flex justify-between gap-4 border-b border-zinc-950/5 py-2 text-sm dark:border-white/10"
+                >
+                  <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
+                  <dd className="text-right font-medium text-zinc-950 dark:text-white">
+                    {value}
+                  </dd>
                 </div>
               ))}
             </dl>
           </section>
         </div>
 
-        <aside className="detail__side">
+        {/* Sticky so the action stays visible while the record is scrolled. */}
+        <aside className="lg:sticky lg:top-8 lg:self-start">
           <OutreachPanel
             customerId={profile.customer_id}
             outreach={outreach}

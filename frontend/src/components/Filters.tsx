@@ -1,3 +1,5 @@
+import { Input } from './ui/input'
+import { Select } from './ui/select'
 import type { CustomerFilters, OutreachStatus, RiskTier } from '../types/api'
 
 interface Props {
@@ -9,12 +11,23 @@ interface Props {
 
 const TIERS: RiskTier[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 const CONTRACTS = ['Month-to-month', 'One year', 'Two year']
-const STATUSES: OutreachStatus[] = [
-  'NOT_CONTACTED',
-  'IN_PROGRESS',
-  'RESOLVED',
-  'UNREACHABLE',
+const STATUSES: { value: OutreachStatus; label: string }[] = [
+  { value: 'NOT_CONTACTED', label: 'Not contacted' },
+  { value: 'IN_PROGRESS', label: 'In progress' },
+  { value: 'RESOLVED', label: 'Resolved' },
+  { value: 'UNREACHABLE', label: 'Unreachable' },
 ]
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        {label}
+      </span>
+      {children}
+    </label>
+  )
+}
 
 export function Filters({ filters, onChange, onReset, resultCount }: Props) {
   const hasFilters = Boolean(
@@ -22,23 +35,24 @@ export function Filters({ filters, onChange, onReset, resultCount }: Props) {
   )
 
   return (
-    <section className="filters" aria-label="Filter customers">
-      <div className="filters__row">
-        <label className="field">
-          <span className="field__label">Search customer ID</span>
-          <input
-            className="field__input"
+    <section
+      aria-label="Filter customers"
+      className="rounded-lg border border-zinc-950/5 bg-white p-4 dark:border-white/10 dark:bg-zinc-900"
+    >
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <Field label="Search customer ID">
+          <Input
             type="search"
+            autoComplete="off"
             placeholder="e.g. 7590-VHVEG"
             value={filters.search ?? ''}
             onChange={(event) => onChange({ search: event.target.value })}
           />
-        </label>
+        </Field>
 
-        <label className="field">
-          <span className="field__label">Risk tier</span>
-          <select
-            className="field__input"
+        <Field label="Risk tier">
+          <Select
+            autoComplete="off"
             value={filters.risk_tier ?? ''}
             onChange={(event) =>
               onChange({ risk_tier: event.target.value as RiskTier | '' })
@@ -50,13 +64,12 @@ export function Filters({ filters, onChange, onReset, resultCount }: Props) {
                 {tier}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="field">
-          <span className="field__label">Contract</span>
-          <select
-            className="field__input"
+        <Field label="Contract">
+          <Select
+            autoComplete="off"
             value={filters.contract ?? ''}
             onChange={(event) => onChange({ contract: event.target.value })}
           >
@@ -66,13 +79,12 @@ export function Filters({ filters, onChange, onReset, resultCount }: Props) {
                 {contract}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="field">
-          <span className="field__label">Outreach</span>
-          <select
-            className="field__input"
+        <Field label="Outreach">
+          <Select
+            autoComplete="off"
             value={filters.outreach_status ?? ''}
             onChange={(event) =>
               onChange({ outreach_status: event.target.value as OutreachStatus | '' })
@@ -80,17 +92,16 @@ export function Filters({ filters, onChange, onReset, resultCount }: Props) {
           >
             <option value="">Any status</option>
             {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status.replace(/_/g, ' ').toLowerCase()}
+              <option key={status.value} value={status.value}>
+                {status.label}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="field">
-          <span className="field__label">Sort by</span>
-          <select
-            className="field__input"
+        <Field label="Sort by">
+          <Select
+            autoComplete="off"
             value={`${filters.sort_by ?? 'risk_score'}:${filters.order ?? 'desc'}`}
             onChange={(event) => {
               const [sort_by, order] = event.target.value.split(':')
@@ -104,19 +115,24 @@ export function Filters({ filters, onChange, onReset, resultCount }: Props) {
             <option value="risk_score:asc">Lowest risk</option>
             <option value="tenure:asc">Newest customers</option>
             <option value="monthly_charges:desc">Highest spend</option>
-          </select>
-        </label>
+          </Select>
+        </Field>
       </div>
 
-      <div className="filters__meta">
+      <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
         {resultCount !== undefined && (
           <span>
-            <strong>{resultCount.toLocaleString()}</strong> customer
-            {resultCount === 1 ? '' : 's'} match
+            <strong className="font-semibold text-zinc-950 dark:text-white">
+              {resultCount.toLocaleString()}
+            </strong>{' '}
+            customer{resultCount === 1 ? '' : 's'} match
           </span>
         )}
         {hasFilters && (
-          <button className="button button--link" onClick={onReset}>
+          <button
+            onClick={onReset}
+            className="text-zinc-950 underline underline-offset-2 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300"
+          >
             Clear filters
           </button>
         )}
