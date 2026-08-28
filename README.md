@@ -30,6 +30,7 @@ startup, so there is no database and nothing to download.
 - [Project layout](#project-layout)
 - [Trade-offs and shortcuts](#trade-offs-and-shortcuts)
 - [With more time](#with-more-time)
+- [Licence](#licence)
 
 ## Running it
 
@@ -141,9 +142,9 @@ its model rather than something added afterwards. It also has
 `placeholderData: keepPreviousData`, which keeps the current page visible while
 the next one loads, so paging and filtering never flash an empty table.
 
-Styling is Tailwind CSS. The base components come from the Tailwind Plus
-Catalyst kit under a Tailwind Plus licence, which is why this repository is
-private.
+Styling is Tailwind CSS. The base components in `components/ui/` come from the
+Tailwind Plus Catalyst kit, used under a Tailwind Plus licence. My own code is
+MIT; those files are not, and `NOTICE` records the split.
 
 ### Data modelling
 
@@ -408,6 +409,8 @@ testing.
 ```
 savedesk/
 ├── data/                       # bundled CSV
+├── LICENSE                     # MIT, for my code
+├── NOTICE                      # what in here is not mine
 ├── backend/
 │   ├── app/
 │   │   ├── main.py             # app, middleware, exception handlers
@@ -477,3 +480,14 @@ the two would immediately diverge. Most of the items below follow from that.
    since those are the parts with real logic in them.
 7. Add bulk actions so an agent can move a filtered set of customers at once
    rather than working through them one at a time.
+
+## Licence
+
+My own code is MIT, in `LICENSE`.
+
+The components in `frontend/src/components/ui/` are the exception. They are
+from the Tailwind Plus Catalyst kit, used under a Tailwind Plus licence, and
+they stay under Tailwind Labs' copyright. The Tailwind Plus licence allows them
+to ship inside a publicly available application like this one, but not to be
+lifted back out for reuse, so the MIT grant deliberately does not extend to
+them. `NOTICE` spells out the split.

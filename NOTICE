@@ -1,0 +1,38 @@
+Third-party components
+======================
+
+Most of this repository is my own work and is covered by the MIT licence in
+LICENSE. The exception is listed below and is NOT covered by that licence.
+
+
+Tailwind Plus (Catalyst)
+------------------------
+
+Files:  frontend/src/components/ui/*.tsx
+        (badge, button, input, link, select, table, textarea)
+
+These are UI components from the Catalyst kit, part of Tailwind Plus, used
+under a Tailwind Plus licence held by the repository author. Copyright remains
+with Tailwind Labs Inc.
+
+They are included here as the presentation layer of an application, which is
+what the Tailwind Plus licence permits for a publicly available project whose
+purpose is not the redistribution of the components themselves. They are not
+offered for reuse: the MIT grant in LICENSE does not extend to them, and
+copying them out of this repository into another project is not permitted
+without your own Tailwind Plus licence.
+
+Licence terms: https://tailwindcss.com/plus/license
+
+
+Other dependencies
+------------------
+
+Everything else is installed from npm or PyPI rather than vendored into this
+repository, and remains under its own licence. The direct dependencies are
+listed in frontend/package.json and backend/requirements.txt. Headless UI and
+Tailwind CSS, which the components above build on, are both MIT licensed.
+
+The dataset in data/ is the IBM sample Telco Customer Churn dataset, widely
+redistributed for educational use and bundled here as the assessment brief
+instructs.
