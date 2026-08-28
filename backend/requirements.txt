@@ -1,0 +1,7 @@
+# Runtime dependencies, pinned to the versions this was built and tested against.
+# Transitive dependencies are resolved by pip; these are the ones we depend on
+# directly, so the file stays readable and reviewable.
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.4
+pydantic-settings==2.15.0
