@@ -27,3 +27,6 @@ dist/
 .vscode/
 .idea/
 *.swp
+
+# Playwright MCP session output
+.playwright-mcp/
