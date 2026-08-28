@@ -60,7 +60,7 @@ To run the tests:
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest          # 135 tests, about a second
+pytest          # 139 tests, about a second
 ruff check . && ruff format --check .
 ```
 
@@ -319,9 +319,11 @@ defensible, but 400 is more widely understood for bad input and it is what the
 brief asks for.
 
 Logs are one JSON object per line with the method, path, status, duration and
-request ID. Every request gets an ID, which is returned in the `X-Request-ID`
-header and included in error bodies, so a screenshot from a user can be traced
-back to a specific log line. Rejected transitions are logged at INFO rather
+request ID. Every request gets an ID, returned in the `X-Request-ID` header and
+included in error bodies, so a screenshot from a user can be traced back to a
+specific log line. An unhandled exception unwinds past the middleware before it
+can set that header, so the error handler sets it too: a 500 is exactly when
+the caller needs an ID to quote. Rejected transitions are logged at INFO rather
 than ERROR, since they represent the state machine behaving correctly rather
 than a service failure.
 
@@ -341,11 +343,19 @@ done. Parallelism would become relevant if scoring moved behind a remote
 service (`httpx` with `asyncio.gather`) or if bulk rescoring made the workload
 CPU-bound (`run_in_executor`).
 
-The case where concurrency does matter is outreach updates, where the
-read, the validation and the write all happen under a single lock. Validating
-outside the lock would let two simultaneous requests both read `NOT_CONTACTED`
-and both write. There is a test that races ten threads at one customer and
-asserts that exactly one succeeds.
+The case where concurrency does matter is outreach updates, where the read, the
+validation and the write all happen under a single lock. Validating outside the
+lock would let two simultaneous requests both read `NOT_CONTACTED` and both
+write. There is a test that races ten threads at one customer and asserts that
+exactly one succeeds.
+
+Because the lock is a plain `threading.Lock` held inside async handlers, how
+often it is taken matters: each acquisition blocks the event loop, however
+briefly. The list endpoint needs a status for every row it filters, so it reads
+them all in one pass via `outreach_statuses()` rather than locking once per
+customer. That is one acquisition per request instead of 7,043, and it also
+gives the filter a consistent snapshot rather than a status that could change
+midway through the scan.
 
 ### A quirk in the dataset
 
@@ -369,7 +379,7 @@ would add a Kaggle account and a network call to the setup.
 
 ## Testing
 
-135 tests, all fast, none touching the network.
+139 tests, all fast, none touching the network.
 
 - `test_scoring.py` covers every factor's points, both sides of every tier
   threshold, the 100-point total, the breakdown summing to the score, and the
@@ -428,8 +438,10 @@ nothing else.
 State is held in memory and resets when the server restarts, which the brief
 allows. `CustomerStore` is the only thing a database would replace.
 
-Filtering is a linear scan over 7,043 rows, which takes a fraction of a
-millisecond. At a million rows it would need indexes.
+Filtering is a linear scan over all 7,043 rows, measured at roughly 4 ms per
+request. That is fine for one agent refreshing a page and would not survive a
+million rows, where the fix is an index on the filtered columns rather than a
+faster scan.
 
 `/model/info` is read-only. Editable weights would need versioning and an audit
 trail covering who changed what and which version scored a given customer,

@@ -71,6 +71,7 @@ def _problem(
     type_uri: str,
 ) -> JSONResponse:
     """Build an RFC 9457 problem+json response."""
+    request_id = getattr(request.state, "request_id", None)
     return JSONResponse(
         status_code=status,
         media_type=PROBLEM_CONTENT_TYPE,
@@ -80,8 +81,12 @@ def _problem(
             "status": status,
             "detail": detail,
             "instance": request.url.path,
-            "request_id": getattr(request.state, "request_id", None),
+            "request_id": request_id,
         },
+        # Set here as well as in the middleware: an unhandled error unwinds past
+        # the middleware before it can add the header, and a 500 is exactly when
+        # the caller needs the ID to quote.
+        headers={"X-Request-ID": request_id} if request_id else None,
     )
 
 

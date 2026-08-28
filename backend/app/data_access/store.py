@@ -159,6 +159,17 @@ class CustomerStore:
             record = self._outreach.get(customer_id)
             return record.status if record else None
 
+    def outreach_statuses(self) -> dict[str, OutreachStatus]:
+        """Every customer's status, read under a single lock.
+
+        The list endpoint needs a status for each row it filters. Calling
+        outreach_status() per row would take the lock once per customer and
+        block the event loop that many times; this takes it once and returns a
+        consistent snapshot.
+        """
+        with self._lock:
+            return {cid: record.status for cid, record in self._outreach.items()}
+
     def update_outreach(
         self, customer_id: str, requested: OutreachStatus, note: str | None = None
     ) -> OutreachRecord:

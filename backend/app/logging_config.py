@@ -87,13 +87,21 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
-        except Exception:
-            self.logger.exception(
-                "Request failed",
+        except Exception as exc:
+            # No traceback here: the app's Exception handler logs it with full
+            # context. This line only records that the request died and how
+            # long it took, so a 500 produces one traceback, not two.
+            self.logger.error(
+                "%s %s -> 500",
+                request.method,
+                request.url.path,
                 extra={
                     "method": request.method,
                     "path": request.url.path,
+                    "status": 500,
                     "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+                    "request_id": request_id,
+                    "error": type(exc).__name__,
                 },
             )
             raise

@@ -195,3 +195,19 @@ class TestScoringAcrossTheWholeDataset:
         for customer in load_customers(settings.csv_path):
             assessment = score_customer(customer)
             assert assessment.tier is tier_for_score(assessment.score)
+
+
+class TestOutreachStatusSnapshot:
+    def test_returns_every_customer(self, store: CustomerStore) -> None:
+        snapshot = store.outreach_statuses()
+        assert set(snapshot) == {"0001-LOWRK", "0002-RISK", "0003-MIDRK"}
+        assert all(s is OutreachStatus.NOT_CONTACTED for s in snapshot.values())
+
+    def test_reflects_updates(self, store: CustomerStore) -> None:
+        store.update_outreach("0002-RISK", OutreachStatus.IN_PROGRESS)
+        assert store.outreach_statuses()["0002-RISK"] is OutreachStatus.IN_PROGRESS
+
+    def test_snapshot_is_a_copy(self, store: CustomerStore) -> None:
+        """Mutating the returned dict must not reach store state."""
+        store.outreach_statuses()["0002-RISK"] = OutreachStatus.RESOLVED
+        assert store.outreach_statuses()["0002-RISK"] is OutreachStatus.NOT_CONTACTED

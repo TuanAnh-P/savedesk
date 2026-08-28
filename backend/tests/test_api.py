@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from fastapi import APIRouter
 from fastapi.testclient import TestClient
+
+from app.data_access.store import CustomerStore
+from app.dependencies import get_store
+from app.main import app
 
 API = "/api/v1"
 
@@ -244,3 +249,36 @@ class TestOperationalConcerns:
     def test_errors_include_the_request_id(self, client: TestClient) -> None:
         response = client.get(f"{API}/customers/NOPE-0000")
         assert response.json()["request_id"] == response.headers["X-Request-ID"]
+
+    def test_unhandled_error_returns_a_problem_with_a_traceable_id(
+        self, store: CustomerStore
+    ) -> None:
+        """A 500 must still carry the ID in the header, not just the body.
+
+        The middleware sets that header on the way out, which an unhandled
+        exception never reaches, so the handler sets it too.
+        """
+        router = APIRouter()
+
+        @router.get("/_boom")
+        async def boom() -> None:
+            raise RuntimeError("simulated bug")
+
+        app.include_router(router, prefix=API)
+        app.dependency_overrides[get_store] = lambda: store
+        try:
+            client = TestClient(app, raise_server_exceptions=False)
+            response = client.get(f"{API}/_boom")
+        finally:
+            app.router.routes = [
+                r for r in app.router.routes if getattr(r, "path", "") != f"{API}/_boom"
+            ]
+            app.dependency_overrides.clear()
+
+        assert response.status_code == 500
+        assert response.headers["content-type"] == "application/problem+json"
+        body = response.json()
+        assert body["status"] == 500
+        # The traceback stays server-side; the client gets only the ID.
+        assert "simulated bug" not in response.text
+        assert body["request_id"] == response.headers["X-Request-ID"]

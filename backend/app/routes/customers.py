@@ -90,7 +90,7 @@ async def list_customers(
     )
 
     rows = store.rows_by_risk()
-    status_for = {r.customer_id: store.outreach_status(r.customer_id) for r in rows}
+    status_for = store.outreach_statuses()
     result = run_query(rows, status_for, query)
 
     return Page[CustomerListItem](
